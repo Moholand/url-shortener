@@ -3,7 +3,8 @@ package handler
 import (
 	"encoding/json"
 	"net/http"
-
+	"url-shortener/internal/service"
+	"github.com/go-chi/chi/v5"
 	"url-shortener/pkg/code"
 )
 
@@ -40,5 +41,20 @@ func ShortenURL(service *service.URLService) http.HandlerFunc {
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(res)
+	}
+}
+
+func RedirectURL(service *service.URLService) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		shortCode := chi.URLParam(r, "shortCode")
+		
+		originalURL, err := service.GetOriginalURL(r.Context(), shortCode)
+		if err != nil || originalURL == "" {
+			http.Error(w, "URL not found", http.StatusNotFound)
+			return
+		}
+
+		http.Redirect(w, r, originalURL, http.StatusFound)
 	}
 }

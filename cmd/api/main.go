@@ -17,14 +17,18 @@ func main() {
 	database := db.Connect()
 	defer database.Close()
 
+	rdb := db.NewRedisClient()
+	
 	urlRepo := repository.NewURLRepository(database)
-	urlService := service.NewURLService(urlRepo)
+	urlService := service.NewURLService(urlRepo, rdb)
 
 	r := chi.NewRouter()
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("OK"))
 	})
+
+	r.Get("/{shortCode}", handler.RedirectURL(urlService))
 
 	r.Post("/shorten", handler.ShortenURL(urlService))
 
