@@ -2,9 +2,12 @@ package service
 
 import (
 	"context"
+	"errors"
 	"time"
 	"url-shortener/internal/model"
 	"url-shortener/internal/repository"
+	"url-shortener/pkg/code"
+	"github.com/lib/pq"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -20,19 +23,29 @@ func NewURLService(repo *repository.URLRepository, rdb *redis.Client) *URLServic
 	}
 }
 
-func (s *URLService) Create(shortCode, originalURL string) (*model.URL, error) {
+func (s *URLService) Create(ctx context.Context, originalURL string) (*model.URL, error) {
+	for i := 0; i < 3; i++ {
+		shortCode := code.Generate(6)
 
-	urlData := &model.URL{
-		ShortCode:   shortCode,
-		OriginalURL: originalURL,
-	}
+		urlData := &model.URL{
+			ShortCode:   shortCode,
+			OriginalURL: originalURL,
+		}
 
-	err := s.Repo.Save(urlData)
-	if err != nil {
+		err := s.Repo.Save(urlData)
+		if err == nil {
+			s.Redis.Set(ctx, shortCode, originalURL, 24*time.Hour)
+			return urlData, nil
+		}
+
+		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23505" {
+			continue
+		}
+
 		return nil, err
 	}
 
-	return urlData, nil
+	return nil, errors.New("could not generate a unique short code after 3 attempts")
 }
 
 func (s *URLService) GetOriginalURL(ctx context.Context, shortCode string) (string, error) {

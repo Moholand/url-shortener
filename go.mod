@@ -3,6 +3,7 @@ module url-shortener
 go 1.24
 
 require (
+	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/go-chi/chi/v5 v5.2.5 // indirect
 	github.com/lib/pq v1.12.3 // indirect
