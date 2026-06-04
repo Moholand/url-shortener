@@ -14,6 +14,7 @@ type ShortenRequest struct {
 
 type ShortenResponse struct {
 	ShortCode string `json:"short_code"`
+	ShortURL  string `json:"short_url"`
 }
 
 func ShortenURL(service *service.URLService) http.HandlerFunc {
@@ -38,8 +39,16 @@ func ShortenURL(service *service.URLService) http.HandlerFunc {
 			return
 		}
 
+		scheme := "http"
+		if r.TLS != nil {
+			scheme = "https"
+		}
+
+		shortURL := scheme + "://" + r.Host + "/" + urlData.ShortCode
+
 		res := ShortenResponse{
 			ShortCode: urlData.ShortCode,
+			ShortURL:  shortURL,
 		}
 
 		w.Header().Set("Content-Type", "application/json")

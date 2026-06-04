@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 
 	"url-shortener/internal/handler"
@@ -14,7 +15,10 @@ import (
 
 func main() {
 
-	database := db.Connect()
+	database, err := db.Connect()
+	if err != nil {
+		log.Fatal(err)
+	}
 	defer database.Close()
 
 	rdb := db.NewRedisClient()
@@ -34,7 +38,7 @@ func main() {
 
 	fmt.Println("Server running on :8080")
 
-	err := http.ListenAndServe(":8080", r)
+	err = http.ListenAndServe(":8080", r)
 	if err != nil {
 		panic(err)
 	}

@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 	"url-shortener/internal/model"
 	"url-shortener/internal/repository"
@@ -24,6 +25,11 @@ func NewURLService(repo *repository.URLRepository, rdb *redis.Client) *URLServic
 }
 
 func (s *URLService) Create(ctx context.Context, originalURL string) (*model.URL, error) {
+	if !strings.HasPrefix(originalURL, "http://") &&
+		!strings.HasPrefix(originalURL, "https://") {
+		originalURL = "https://" + originalURL
+	}
+
 	for i := 0; i < 3; i++ {
 		shortCode := code.Generate(6)
 
