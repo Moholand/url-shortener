@@ -24,7 +24,8 @@ func main() {
 	rdb := db.NewRedisClient()
 	
 	urlRepo := repository.NewURLRepository(database)
-	urlService := service.NewURLService(urlRepo, rdb)
+	clickRepo := repository.NewClickRepository(database)
+	urlService := service.NewURLService(urlRepo, clickRepo, rdb)
 
 	r := chi.NewRouter()
 
@@ -35,6 +36,8 @@ func main() {
 	r.Get("/{shortCode}", handler.RedirectURL(urlService))
 
 	r.Post("/shorten", handler.ShortenURL(urlService))
+
+	r.Get("/analytics/{shortCode}", handler.GetAnalytics(urlService))
 
 	fmt.Println("Server running on :8080")
 

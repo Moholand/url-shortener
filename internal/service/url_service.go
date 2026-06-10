@@ -13,14 +13,16 @@ import (
 )
 
 type URLService struct {
-	Repo *repository.URLRepository
-	Redis *redis.Client
+	Repo       *repository.URLRepository
+	ClickRepo  *repository.ClickRepository
+	Redis      *redis.Client
 }
 
-func NewURLService(repo *repository.URLRepository, rdb *redis.Client) *URLService {
+func NewURLService(repo *repository.URLRepository, clickRepo *repository.ClickRepository, rdb *redis.Client) *URLService {
 	return &URLService{
-		Repo: repo, 
-		Redis: rdb,
+		Repo:      repo,
+		ClickRepo: clickRepo,
+		Redis:     rdb,
 	}
 }
 
@@ -55,17 +57,40 @@ func (s *URLService) Create(ctx context.Context, originalURL string) (*model.URL
 }
 
 func (s *URLService) GetOriginalURL(ctx context.Context, shortCode string) (string, error) {
-    val, err := s.Redis.Get(ctx, shortCode).Result()
-    if err == nil {
-        return val, nil
-    }
+	val, err := s.Redis.Get(ctx, shortCode).Result()
+	if err == nil {
+		return val, nil
+	}
 
-    url, err := s.Repo.GetByShortCode(shortCode)
-    if err != nil {
-        return "", err
-    }
+	url, err := s.Repo.GetByShortCode(shortCode)
+	if err != nil {
+		return "", err
+	}
 
-    s.Redis.Set(ctx, shortCode, url, 1*time.Hour)
-    
-    return url, nil
+	if url != "" {
+		s.Redis.Set(ctx, shortCode, url, 1*time.Hour)
+	}
+
+	return url, nil
+}
+
+func (s *URLService) RecordClick(ctx context.Context, shortCode, ipAddress, userAgent, referer string) {
+	err := s.ClickRepo.Save(shortCode, ipAddress, userAgent, referer)
+	if err != nil {
+		return
+	}
+}
+
+func (s *URLService) GetAnalytics(ctx context.Context, shortCode string) (int, []repository.ClickRecord, error) {
+	clicks, err := s.ClickRepo.GetByShortCode(shortCode, 50, 0)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	total, err := s.ClickRepo.CountByShortCode(shortCode)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	return total, clicks, nil
 }

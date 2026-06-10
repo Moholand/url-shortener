@@ -1,12 +1,26 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"url-shortener/internal/service"
 	"github.com/asaskevich/govalidator"
 	"github.com/go-chi/chi/v5"
 )
+
+type AnalyticsResponse struct {
+	ShortCode   string                      `json:"short_code"`
+	TotalClicks int                         `json:"total_clicks"`
+	Clicks      []AnalyticsClick            `json:"clicks"`
+}
+
+type AnalyticsClick struct {
+	IPAddress string `json:"ip_address"`
+	UserAgent string `json:"user_agent"`
+	Referer   string `json:"referer"`
+	ClickedAt string `json:"clicked_at"`
+}
 
 type ShortenRequest struct {
 	URL string `json:"url"`
@@ -60,13 +74,52 @@ func RedirectURL(service *service.URLService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		shortCode := chi.URLParam(r, "shortCode")
-		
+
 		originalURL, err := service.GetOriginalURL(r.Context(), shortCode)
 		if err != nil || originalURL == "" {
 			http.Error(w, "URL not found", http.StatusNotFound)
 			return
 		}
 
+		go service.RecordClick(context.Background(), shortCode, r.RemoteAddr, r.UserAgent(), r.Referer())
+
 		http.Redirect(w, r, originalURL, http.StatusFound)
+	}
+}
+
+func GetAnalytics(service *service.URLService) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		shortCode := chi.URLParam(r, "shortCode")
+
+		originalURL, err := service.Repo.GetByShortCode(shortCode)
+		if err != nil || originalURL == "" {
+			http.Error(w, "URL not found", http.StatusNotFound)
+			return
+		}
+
+		total, clicks, err := service.GetAnalytics(r.Context(), shortCode)
+		if err != nil {
+			http.Error(w, "internal error", http.StatusInternalServerError)
+			return
+		}
+
+		analyticsClicks := make([]AnalyticsClick, len(clicks))
+		for i, c := range clicks {
+			analyticsClicks[i] = AnalyticsClick{
+				IPAddress: c.IPAddress,
+				UserAgent: c.UserAgent,
+				Referer:   c.Referer,
+				ClickedAt: c.ClickedAt.Format("2006-01-02T15:04:05Z07:00"),
+			}
+		}
+
+		res := AnalyticsResponse{
+			ShortCode:   shortCode,
+			TotalClicks: total,
+			Clicks:      analyticsClicks,
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(res)
 	}
 }
