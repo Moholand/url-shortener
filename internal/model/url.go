@@ -6,6 +6,7 @@ type URL struct {
 	ID          int64
 	ShortCode   string
 	OriginalURL string
+	ExpiresAt   *time.Time
 }
 
 type Click struct {

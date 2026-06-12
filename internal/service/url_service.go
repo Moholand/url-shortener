@@ -26,7 +26,7 @@ func NewURLService(repo *repository.URLRepository, clickRepo *repository.ClickRe
 	}
 }
 
-func (s *URLService) Create(ctx context.Context, originalURL string) (*model.URL, error) {
+func (s *URLService) Create(ctx context.Context, originalURL string, expiresAt *time.Time) (*model.URL, error) {
 	if !strings.HasPrefix(originalURL, "http://") &&
 		!strings.HasPrefix(originalURL, "https://") {
 		originalURL = "https://" + originalURL
@@ -38,11 +38,19 @@ func (s *URLService) Create(ctx context.Context, originalURL string) (*model.URL
 		urlData := &model.URL{
 			ShortCode:   shortCode,
 			OriginalURL: originalURL,
+			ExpiresAt:   expiresAt,
 		}
 
 		err := s.Repo.Save(urlData)
 		if err == nil {
-			s.Redis.Set(ctx, shortCode, originalURL, 24*time.Hour)
+			ttl := 24 * time.Hour
+			if expiresAt != nil {
+				remaining := time.Until(*expiresAt)
+				if remaining < ttl {
+					ttl = remaining
+				}
+			}
+			s.Redis.Set(ctx, shortCode, originalURL, ttl)
 			return urlData, nil
 		}
 

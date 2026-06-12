@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"time"
 	"url-shortener/internal/service"
 	"github.com/asaskevich/govalidator"
 	"github.com/go-chi/chi/v5"
@@ -23,7 +24,8 @@ type AnalyticsClick struct {
 }
 
 type ShortenRequest struct {
-	URL string `json:"url"`
+	URL       string `json:"url"`
+	ExpiresAt string `json:"expires_at,omitempty"`
 }
 
 type ShortenResponse struct {
@@ -47,7 +49,17 @@ func ShortenURL(service *service.URLService) http.HandlerFunc {
             return
         }
 
-		urlData, err := service.Create(r.Context(), req.URL)
+		var expiresAt *time.Time
+		if req.ExpiresAt != "" {
+			t, err := time.Parse(time.RFC3339, req.ExpiresAt)
+			if err != nil {
+				http.Error(w, "invalid expires_at format, use RFC 3339 (e.g. 2026-12-31T23:59:59Z)", http.StatusBadRequest)
+				return
+			}
+			expiresAt = &t
+		}
+
+		urlData, err := service.Create(r.Context(), req.URL, expiresAt)
 		if err != nil {
 			http.Error(w, "database error", http.StatusInternalServerError)
 			return
