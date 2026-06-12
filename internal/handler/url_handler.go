@@ -12,6 +12,7 @@ import (
 
 type AnalyticsResponse struct {
 	ShortCode   string                      `json:"short_code"`
+	ExpiresAt   *string                     `json:"expires_at,omitempty"`
 	TotalClicks int                         `json:"total_clicks"`
 	Clicks      []AnalyticsClick            `json:"clicks"`
 }
@@ -103,8 +104,8 @@ func GetAnalytics(service *service.URLService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		shortCode := chi.URLParam(r, "shortCode")
 
-		originalURL, err := service.Repo.GetByShortCode(shortCode)
-		if err != nil || originalURL == "" {
+		urlData, err := service.GetURLInfo(r.Context(), shortCode)
+		if err != nil || urlData == nil {
 			http.Error(w, "URL not found", http.StatusNotFound)
 			return
 		}
@@ -125,8 +126,15 @@ func GetAnalytics(service *service.URLService) http.HandlerFunc {
 			}
 		}
 
+		var expiresAtStr *string
+		if urlData.ExpiresAt != nil {
+			s := urlData.ExpiresAt.Format("2006-01-02T15:04:05Z07:00")
+			expiresAtStr = &s
+		}
+
 		res := AnalyticsResponse{
 			ShortCode:   shortCode,
+			ExpiresAt:   expiresAtStr,
 			TotalClicks: total,
 			Clicks:      analyticsClicks,
 		}

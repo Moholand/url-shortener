@@ -41,3 +41,17 @@ func (r *URLRepository) GetByShortCode(shortCode string) (string, error) {
 	}
 	return originalURL, nil
 }
+
+func (r *URLRepository) GetURLByShortCode(shortCode string) (*model.URL, error) {
+	query := `SELECT id, short_code, original_url, expires_at FROM urls WHERE short_code = $1 AND (expires_at IS NULL OR expires_at > NOW())`
+
+	var u model.URL
+	err := r.DB.QueryRow(query, shortCode).Scan(&u.ID, &u.ShortCode, &u.OriginalURL, &u.ExpiresAt)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &u, nil
+}

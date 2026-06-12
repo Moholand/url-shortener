@@ -89,6 +89,10 @@ func (s *URLService) RecordClick(ctx context.Context, shortCode, ipAddress, user
 	}
 }
 
+func (s *URLService) GetURLInfo(ctx context.Context, shortCode string) (*model.URL, error) {
+	return s.Repo.GetURLByShortCode(shortCode)
+}
+
 func (s *URLService) GetAnalytics(ctx context.Context, shortCode string) (int, []repository.ClickRecord, error) {
 	clicks, err := s.ClickRepo.GetByShortCode(shortCode, 50, 0)
 	if err != nil {
