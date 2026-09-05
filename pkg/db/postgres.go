@@ -54,7 +54,7 @@ func Connect() (*sql.DB, error) {
 	}
 }
 
-func getEnv(key, fallback string) string {
+func getEnv(key string, fallback string) string {
 	if value, exists := os.LookupEnv(key); exists {
 		return value
 	}
