@@ -11,10 +11,10 @@ import (
 )
 
 type AnalyticsResponse struct {
-	ShortCode   string                      `json:"short_code"`
-	ExpiresAt   *string                     `json:"expires_at,omitempty"`
-	TotalClicks int                         `json:"total_clicks"`
-	Clicks      []AnalyticsClick            `json:"clicks"`
+	ShortCode   string           `json:"short_code"`
+	ExpiresAt   *string          `json:"expires_at,omitempty"`
+	TotalClicks int              `json:"total_clicks"`
+	Clicks      []AnalyticsClick `json:"clicks"`
 }
 
 type AnalyticsClick struct {

@@ -12,6 +12,8 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+const pgUniqueViolation = "23505"
+
 type URLService struct {
 	Repo       *repository.URLRepository
 	ClickRepo  *repository.ClickRepository
@@ -54,7 +56,7 @@ func (s *URLService) Create(ctx context.Context, originalURL string, expiresAt *
 			return urlData, nil
 		}
 
-		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23505" {
+		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == pgUniqueViolation {
 			continue
 		}
 
