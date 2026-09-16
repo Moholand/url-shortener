@@ -100,6 +100,21 @@ func RedirectURL(service *service.URLService) http.HandlerFunc {
 	}
 }
 
+func DeleteURL(service *service.URLService) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		shortCode := chi.URLParam(r, "shortCode")
+
+		err := service.Delete(r.Context(), shortCode)
+		if err != nil {
+			http.Error(w, "internal error", http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNoContent)
+	}
+}
+
 func GetAnalytics(service *service.URLService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		shortCode := chi.URLParam(r, "shortCode")

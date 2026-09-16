@@ -39,6 +39,8 @@ func main() {
 
 	r.Get("/analytics/{shortCode}", handler.GetAnalytics(urlService))
 
+	r.Delete("/{shortCode}", handler.DeleteURL(urlService))
+
 	fmt.Println("Server running on :8080")
 
 	err = http.ListenAndServe(":8080", r)

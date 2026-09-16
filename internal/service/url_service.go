@@ -91,6 +91,15 @@ func (s *URLService) RecordClick(ctx context.Context, shortCode, ipAddress, user
 	}
 }
 
+func (s *URLService) Delete(ctx context.Context, shortCode string) error {
+	err := s.Repo.DeleteByShortCode(shortCode)
+	if err != nil {
+		return err
+	}
+	s.Redis.Del(ctx, shortCode)
+	return nil
+}
+
 func (s *URLService) GetURLInfo(ctx context.Context, shortCode string) (*model.URL, error) {
 	return s.Repo.GetURLByShortCode(shortCode)
 }
