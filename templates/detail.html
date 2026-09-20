@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.URL.ShortCode}} - URL Details</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+        .container { max-width: 1100px; margin: 0 auto; padding: 20px; }
+        nav {
+            background: #1a1a2e;
+            padding: 16px 20px;
+            margin-bottom: 24px;
+        }
+        nav a { color: #fff; text-decoration: none; font-size: 18px; font-weight: 600; }
+        nav a:hover { opacity: 0.85; }
+        .card {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { text-align: left; padding: 12px 16px; border-bottom: 1px solid #eee; }
+        th { font-weight: 600; color: #555; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; }
+        tr:hover { background: #f9f9fb; }
+        a { color: #1a73e8; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            text-decoration: none;
+        }
+        .btn-primary { background: #1a73e8; color: #fff; }
+        .btn-primary:hover { background: #1557b0; text-decoration: none; }
+        .btn-danger { background: #dc3545; color: #fff; }
+        .btn-danger:hover { background: #b02a37; text-decoration: none; }
+        .btn-outline {
+            background: transparent;
+            color: #1a73e8;
+            border: 1px solid #1a73e8;
+        }
+        .btn-outline:hover { background: #e8f0fe; text-decoration: none; }
+        .btn-sm { padding: 6px 12px; font-size: 13px; }
+        .badge {
+            display: inline-block;
+            background: #e8f0fe;
+            color: #1a73e8;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        .detail-header h1 { font-size: 20px; margin-bottom: 8px; word-break: break-all; }
+        .detail-header .meta { color: #666; font-size: 14px; }
+        .detail-header .meta span { margin-right: 20px; }
+        .url-box {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #f5f5f5;
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 14px;
+            margin-top: 12px;
+            word-break: break-all;
+        }
+        .copy-btn {
+            flex-shrink: 0;
+            background: #1a73e8;
+            color: #fff;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        .copy-btn:hover { background: #1557b0; }
+        .stats { display: flex; gap: 16px; margin-bottom: 24px; }
+        .stat-card {
+            flex: 1;
+            background: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .stat-card .number { font-size: 32px; font-weight: 700; color: #1a73e8; }
+        .stat-card .label { font-size: 13px; color: #888; margin-top: 4px; }
+        .click-entry td { font-size: 13px; }
+        .click-entry .mono { font-family: monospace; }
+        .click-entry .muted { color: #888; }
+        .actions { display: flex; gap: 8px; margin-top: 16px; }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="container">
+            <a href="/panel">URL Shortener Panel</a>
+        </div>
+    </nav>
+    <div class="container">
+        <div style="margin-bottom: 16px;">
+            <a href="/panel" class="btn btn-outline btn-sm">&larr; Back to list</a>
+        </div>
+
+        <div class="card">
+            <div class="detail-header">
+                <h1>{{.URL.ShortCode}}</h1>
+                <div class="meta">
+                    <span>Created: {{.URL.CreatedAt.Format "Jan 02, 2006 15:04:05"}}</span>
+                    {{if .URL.ExpiresAt}}
+                        <span>Expires: {{.URL.ExpiresAt.Format "Jan 02, 2006 15:04:05"}}</span>
+                    {{else}}
+                        <span>Expires: Never</span>
+                    {{end}}
+                </div>
+                <div class="url-box">
+                    <span style="flex:1;">{{.URL.OriginalURL}}</span>
+                    <a href="{{.URL.OriginalURL}}" target="_blank" rel="noopener" class="btn btn-outline btn-sm">Open &nearr;</a>
+                </div>
+                <div class="url-box" style="margin-top:8px;background:#e8f0fe;">
+                    <span style="flex:1;">{{.ShortURL}}</span>
+                    <button class="copy-btn" onclick="navigator.clipboard.writeText('{{.ShortURL}}').then(()=>this.textContent='Copied!')">Copy</button>
+                </div>
+            </div>
+            <div class="actions">
+                <form method="POST" action="/panel/{{.URL.ShortCode}}/delete" onsubmit="return confirm('Delete this link?')">
+                    <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="number">{{.TotalClicks}}</div>
+                <div class="label">Total Clicks</div>
+            </div>
+            <div class="stat-card">
+                <div class="number">{{len .Clicks}}</div>
+                <div class="label">Recent Clicks Shown</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2 style="font-size:16px;margin-bottom:16px;">Click Details</h2>
+            {{if .Clicks}}
+            <table>
+                <thead>
+                    <tr>
+                        <th>IP Address</th>
+                        <th>User Agent</th>
+                        <th>Referer</th>
+                        <th>Time</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .Clicks}}
+                    <tr class="click-entry">
+                        <td class="mono">{{.IPAddress}}</td>
+                        <td style="max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{.UserAgent}}">{{.UserAgent}}</td>
+                        <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{.Referer}}">
+                            {{if .Referer}}{{.Referer}}{{else}}<span class="muted">-</span>{{end}}
+                        </td>
+                        <td class="muted">{{.ClickedAt.Format "Jan 02, 2006 15:04:05"}}</td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+            {{else}}
+            <div style="text-align:center;padding:40px;color:#888;">
+                <p>No clicks recorded yet.</p>
+            </div>
+            {{end}}
+        </div>
+    </div>
+</body>
+</html>

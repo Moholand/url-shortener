@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL Shortener Panel</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+        .container { max-width: 1100px; margin: 0 auto; padding: 20px; }
+        nav {
+            background: #1a1a2e;
+            padding: 16px 20px;
+            margin-bottom: 24px;
+        }
+        nav a { color: #fff; text-decoration: none; font-size: 18px; font-weight: 600; }
+        nav a:hover { opacity: 0.85; }
+        .card {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { text-align: left; padding: 12px 16px; border-bottom: 1px solid #eee; }
+        th { font-weight: 600; color: #555; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; }
+        tr:hover { background: #f9f9fb; }
+        a { color: #1a73e8; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .search-bar { display: flex; gap: 8px; margin-bottom: 20px; }
+        .search-bar input {
+            flex: 1;
+            padding: 10px 14px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            outline: none;
+        }
+        .search-bar input:focus { border-color: #1a73e8; }
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            text-decoration: none;
+        }
+        .btn-primary { background: #1a73e8; color: #fff; }
+        .btn-primary:hover { background: #1557b0; text-decoration: none; }
+        .btn-sm { padding: 6px 12px; font-size: 13px; }
+        .badge {
+            display: inline-block;
+            background: #e8f0fe;
+            color: #1a73e8;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        .empty-state { text-align: center; padding: 60px 20px; color: #888; }
+        .empty-state p { margin-bottom: 16px; }
+        .pagination { display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 20px; }
+        .pagination a, .pagination span {
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-size: 14px;
+            text-decoration: none;
+            color: #333;
+            background: #fff;
+            border: 1px solid #ddd;
+        }
+        .pagination a:hover { background: #f0f0f0; text-decoration: none; }
+        .pagination .active { background: #1a73e8; color: #fff; border-color: #1a73e8; }
+        .pagination .disabled { color: #bbb; pointer-events: none; }
+        .result-count { color: #888; font-size: 14px; margin-bottom: 12px; }
+        .original-url { max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="container">
+            <a href="/panel">URL Shortener Panel</a>
+        </div>
+    </nav>
+    <div class="container">
+        <div class="card">
+            <form class="search-bar" method="GET" action="/panel">
+                <input type="text" name="q" placeholder="Search by URL or short code..." value="{{.Search}}">
+                <button type="submit" class="btn btn-primary">Search</button>
+                {{if .Search}}
+                    <a href="/panel" class="btn" style="background:#eee;color:#333;">Clear</a>
+                {{end}}
+            </form>
+
+            {{if .Items}}
+                <p class="result-count">{{.Total}} link{{if ne .Total 1}}s{{end}} found</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Short Code</th>
+                            <th>Original URL</th>
+                            <th>Created</th>
+                            <th>Expires</th>
+                            <th>Clicks</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{range .Items}}
+                        <tr>
+                            <td><a href="/panel/{{.ShortCode}}">{{.ShortCode}}</a></td>
+                            <td class="original-url" title="{{.OriginalURL}}">{{.OriginalURL}}</td>
+                            <td>{{.CreatedAt.Format "Jan 02, 2006 15:04"}}</td>
+                            <td>
+                                {{if .ExpiresAt}}
+                                    {{.ExpiresAt.Format "Jan 02, 2006 15:04"}}
+                                {{else}}
+                                    <span style="color:#bbb;">Never</span>
+                                {{end}}
+                            </td>
+                            <td><span class="badge">{{.ClickCount}}</span></td>
+                            <td>
+                                <a href="/panel/{{.ShortCode}}" class="btn btn-primary btn-sm">View</a>
+                            </td>
+                        </tr>
+                        {{end}}
+                    </tbody>
+                </table>
+
+                {{if gt .TotalPages 1}}
+                <div class="pagination">
+                    {{if le .Page 1}}
+                        <span class="disabled">&laquo; Prev</span>
+                    {{else}}
+                        <a href="/panel?page={{.PrevPage}}&q={{.Search}}">&laquo; Prev</a>
+                    {{end}}
+
+                    {{range .PageNumbers}}
+                        {{if eq . $.Page}}
+                            <span class="active">{{.}}</span>
+                        {{else}}
+                            <a href="/panel?page={{.}}&q={{$.Search}}">{{.}}</a>
+                        {{end}}
+                    {{end}}
+
+                    {{if ge .Page .TotalPages}}
+                        <span class="disabled">Next &raquo;</span>
+                    {{else}}
+                        <a href="/panel?page={{.NextPage}}&q={{.Search}}">Next &raquo;</a>
+                    {{end}}
+                </div>
+                {{end}}
+            {{else}}
+                <div class="empty-state">
+                    {{if .Search}}
+                        <p>No links match "{{.Search}}"</p>
+                        <a href="/panel" class="btn btn-primary">Clear Search</a>
+                    {{else}}
+                        <p>No links created yet.</p>
+                        <p>Use the API to create a short link:</p>
+                        <code style="display:block;margin-top:12px;padding:12px;background:#f5f5f5;border-radius:6px;font-size:13px;">
+                            POST /shorten<br>
+                            {"url": "https://example.com"}
+                        </code>
+                    {{end}}
+                </div>
+            {{end}}
+        </div>
+    </div>
+</body>
+</html>

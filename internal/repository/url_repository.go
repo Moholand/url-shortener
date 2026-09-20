@@ -2,6 +2,7 @@ package repository
 
 import (
 	"database/sql"
+	"fmt"
 	"url-shortener/internal/model"
 )
 
@@ -52,10 +53,10 @@ func (r *URLRepository) DeleteByShortCode(shortCode string) error {
 }
 
 func (r *URLRepository) GetURLByShortCode(shortCode string) (*model.URL, error) {
-	query := `SELECT id, short_code, original_url, expires_at FROM urls WHERE short_code = $1 AND (expires_at IS NULL OR expires_at > NOW())`
+	query := `SELECT id, short_code, original_url, created_at, expires_at FROM urls WHERE short_code = $1 AND (expires_at IS NULL OR expires_at > NOW())`
 
 	var u model.URL
-	err := r.DB.QueryRow(query, shortCode).Scan(&u.ID, &u.ShortCode, &u.OriginalURL, &u.ExpiresAt)
+	err := r.DB.QueryRow(query, shortCode).Scan(&u.ID, &u.ShortCode, &u.OriginalURL, &u.CreatedAt, &u.ExpiresAt)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -63,4 +64,59 @@ func (r *URLRepository) GetURLByShortCode(shortCode string) (*model.URL, error) 
 		return nil, err
 	}
 	return &u, nil
+}
+
+func (r *URLRepository) ListAll(limit, offset int, search string) ([]model.URLListItem, error) {
+	query := `
+		SELECT u.id, u.short_code, u.original_url, u.created_at, u.expires_at,
+		       COALESCE(c.cnt, 0) AS click_count
+		FROM urls u
+		LEFT JOIN (
+			SELECT short_code, COUNT(*) AS cnt
+			FROM clicks
+			GROUP BY short_code
+		) c ON u.short_code = c.short_code
+	`
+
+	var args []interface{}
+	argIdx := 1
+
+	if search != "" {
+		query += fmt.Sprintf(` WHERE u.original_url ILIKE '%%' || $%d || '%%' OR u.short_code ILIKE '%%' || $%d || '%%'`, argIdx, argIdx)
+		args = append(args, search)
+		argIdx++
+	}
+
+	query += fmt.Sprintf(` ORDER BY u.created_at DESC LIMIT $%d OFFSET $%d`, argIdx, argIdx+1)
+	args = append(args, limit, offset)
+
+	rows, err := r.DB.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var items []model.URLListItem
+	for rows.Next() {
+		var item model.URLListItem
+		if err := rows.Scan(&item.ID, &item.ShortCode, &item.OriginalURL, &item.CreatedAt, &item.ExpiresAt, &item.ClickCount); err != nil {
+			return nil, err
+		}
+		items = append(items, item)
+	}
+	return items, nil
+}
+
+func (r *URLRepository) CountAll(search string) (int, error) {
+	query := `SELECT COUNT(*) FROM urls`
+	var args []interface{}
+
+	if search != "" {
+		query += ` WHERE original_url ILIKE '%' || $1 || '%' OR short_code ILIKE '%' || $1 || '%'`
+		args = append(args, search)
+	}
+
+	var count int
+	err := r.DB.QueryRow(query, args...).Scan(&count)
+	return count, err
 }

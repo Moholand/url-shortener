@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 
@@ -27,19 +28,32 @@ func main() {
 	clickRepo := repository.NewClickRepository(database)
 	urlService := service.NewURLService(urlRepo, clickRepo, rdb)
 
+	tmpl, err := template.ParseGlob("templates/*.html")
+	if err != nil {
+		log.Fatal("failed to parse templates:", err)
+	}
+
+	panelHandler := handler.NewPanelHandler(urlService, tmpl)
+
 	r := chi.NewRouter()
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("OK"))
 	})
 
-	r.Get("/{shortCode}", handler.RedirectURL(urlService))
+	r.Route("/panel", func(r chi.Router) {
+		r.Get("/", panelHandler.PanelList)
+		r.Get("/{shortCode}", panelHandler.PanelDetail)
+		r.Post("/{shortCode}/delete", panelHandler.PanelDelete)
+	})
 
 	r.Post("/shorten", handler.ShortenURL(urlService))
 
 	r.Get("/analytics/{shortCode}", handler.GetAnalytics(urlService))
 
 	r.Delete("/{shortCode}", handler.DeleteURL(urlService))
+
+	r.Get("/{shortCode}", handler.RedirectURL(urlService))
 
 	fmt.Println("Server running on :8080")
 

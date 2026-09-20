@@ -117,3 +117,39 @@ func (s *URLService) GetAnalytics(ctx context.Context, shortCode string) (int, [
 
 	return total, clicks, nil
 }
+
+func (s *URLService) ListURLs(ctx context.Context, limit, offset int, search string) ([]model.URLListItem, int, error) {
+	items, err := s.Repo.ListAll(limit, offset, search)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	total, err := s.Repo.CountAll(search)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return items, total, nil
+}
+
+func (s *URLService) GetURLDetail(ctx context.Context, shortCode string) (*model.URL, []repository.ClickRecord, int, error) {
+	url, err := s.Repo.GetURLByShortCode(shortCode)
+	if err != nil {
+		return nil, nil, 0, err
+	}
+	if url == nil {
+		return nil, nil, 0, nil
+	}
+
+	clicks, err := s.ClickRepo.GetByShortCode(shortCode, 50, 0)
+	if err != nil {
+		return nil, nil, 0, err
+	}
+
+	total, err := s.ClickRepo.CountByShortCode(shortCode)
+	if err != nil {
+		return nil, nil, 0, err
+	}
+
+	return url, clicks, total, nil
+}
