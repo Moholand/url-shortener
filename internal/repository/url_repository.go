@@ -66,7 +66,7 @@ func (r *URLRepository) GetURLByShortCode(shortCode string) (*model.URL, error) 
 	return &u, nil
 }
 
-func (r *URLRepository) ListAll(limit, offset int, search string) ([]model.URLListItem, error) {
+func (r *URLRepository) ListAll(limit int, offset int, search string) ([]model.URLListItem, error) {
 	query := `
 		SELECT u.id, u.short_code, u.original_url, u.created_at, u.expires_at,
 		       COALESCE(c.cnt, 0) AS click_count

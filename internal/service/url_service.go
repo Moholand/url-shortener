@@ -118,7 +118,7 @@ func (s *URLService) GetAnalytics(ctx context.Context, shortCode string) (int, [
 	return total, clicks, nil
 }
 
-func (s *URLService) ListURLs(ctx context.Context, limit, offset int, search string) ([]model.URLListItem, int, error) {
+func (s *URLService) ListURLs(ctx context.Context, limit int, offset int, search string) ([]model.URLListItem, int, error) {
 	items, err := s.Repo.ListAll(limit, offset, search)
 	if err != nil {
 		return nil, 0, err
