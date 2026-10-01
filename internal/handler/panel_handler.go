@@ -6,9 +6,11 @@ import (
 	"math"
 	"net/http"
 	"strconv"
+	"time"
 
 	"url-shortener/internal/service"
 
+	"github.com/asaskevich/govalidator"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -120,4 +122,57 @@ func (h *PanelHandler) PanelDelete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, "/panel", http.StatusFound)
+}
+
+func (h *PanelHandler) PanelCreate(w http.ResponseWriter, r *http.Request) {
+	h.renderCreateForm(w, "", "", "")
+}
+
+func (h *PanelHandler) PanelStoreShortCode(w http.ResponseWriter, r *http.Request) {
+	url := r.FormValue("url")
+	expiresAtRaw := r.FormValue("expires_at")
+
+	if !govalidator.IsURL(url) {
+		h.renderCreateForm(w, url, expiresAtRaw, "Invalid URL format")
+		return
+	}
+
+	var expiresAt *time.Time
+	if expiresAtRaw != "" {
+		parsed, err := parseExpiresAt(expiresAtRaw)
+		if err != nil {
+			h.renderCreateForm(w, url, expiresAtRaw, "Invalid expires_at format")
+			return
+		}
+		expiresAt = &parsed
+	}
+
+	urlData, err := h.Service.Create(r.Context(), url, expiresAt)
+	if err != nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, "/panel/"+urlData.ShortCode, http.StatusFound)
+}
+
+func (h *PanelHandler) renderCreateForm(w http.ResponseWriter, url, expiresAt, errMsg string) {
+	data := struct {
+		URL       string
+		ExpiresAt string
+		Error     string
+	}{
+		URL:       url,
+		ExpiresAt: expiresAt,
+		Error:     errMsg,
+	}
+
+	h.Template.ExecuteTemplate(w, "create.html", data)
+}
+
+func parseExpiresAt(v string) (time.Time, error) {
+	if t, err := time.Parse(time.RFC3339, v); err == nil {
+		return t, nil
+	}
+	return time.Parse("2006-01-02T15:04", v)
 }

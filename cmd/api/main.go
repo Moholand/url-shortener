@@ -43,6 +43,8 @@ func main() {
 
 	r.Route("/panel", func(r chi.Router) {
 		r.Get("/", panelHandler.PanelList)
+		r.Get("/create", panelHandler.PanelCreate)
+		r.Post("/create", panelHandler.PanelStoreShortCode)
 		r.Get("/{shortCode}", panelHandler.PanelDetail)
 		r.Post("/{shortCode}/delete", panelHandler.PanelDelete)
 	})

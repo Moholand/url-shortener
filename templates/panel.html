@@ -91,6 +91,10 @@
         </div>
     </nav>
     <div class="container">
+        <div class="card" style="display:flex;justify-content:flex-start;margin-bottom:20px;">
+            <a href="/panel/create" class="btn btn-primary">Create Short Link</a>
+        </div>
+
         <div class="card">
             <form class="search-bar" method="GET" action="/panel">
                 <input type="text" name="q" placeholder="Search by URL or short code..." value="{{.Search}}">
@@ -164,12 +168,7 @@
                         <p>No links match "{{.Search}}"</p>
                         <a href="/panel" class="btn btn-primary">Clear Search</a>
                     {{else}}
-                        <p>No links created yet.</p>
-                        <p>Use the API to create a short link:</p>
-                        <code style="display:block;margin-top:12px;padding:12px;background:#f5f5f5;border-radius:6px;font-size:13px;">
-                            POST /shorten<br>
-                            {"url": "https://example.com"}
-                        </code>
+                        <p>No links created yet</p>
                     {{end}}
                 </div>
             {{end}}
